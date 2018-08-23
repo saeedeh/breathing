@@ -29,6 +29,6 @@
 <platform name="ios">
        <allow-intent href="itms:*" />
        <allow-intent href="itms-apps:*" />
-	   <icon src="assets/lung.svg" />
+	   <!-- <icon src="assets/lung.svg" /> -->
    </platform>
 </widget>
