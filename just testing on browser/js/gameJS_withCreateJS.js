@@ -1,12 +1,7 @@
 //inilize variables
-const nRow=10;
-const nCol=6;
-var p_target=0.3333;
-var numTarget=22;
-const timeLimit=20000;
-const TRIAL_NUM=14;
-const ITI=1000;
-
+const ROUND_NUM=2
+const relaxTime=1000;
+const breathNum=5;
 const fontSize=35;
 const fontStr=fontSize+'px Calibri';
 const Wmargin=50;//5px margin
@@ -15,19 +10,18 @@ const BUTTON_FONT='Arial'
 var stage;
 var mainCV;
 var startPage,endPage;
-var trial;
-var practiceTrial;
-var cellWidth,cellHeight;
-var respTimeout;
 var SUBJ_ID
-const letters=['p','d']
-const topQuotes=['','\u030D','\u030E']; //single above, double above
-const downQuotes=['','\u0329','\u0348']; //single below, double below
-//var cir
 
-//time
+//var cir
+//////////////////////param definition/////////
+var page
+var timerRectCmd;
+var timerRect;
+var filter;
+//////////////////////
 
 //FILE
+
 var subjFileEntry=null;
 var subjFileWriter=null;
 var subjFileName;
@@ -58,7 +52,7 @@ function loadSounds()
       return;
     }
     SUBJ_ID= +SUBJ_ID;
-    subjFileName=SUBJ_ID+'.txt';
+    subjFileName=SUBJ_ID+'_breath.txt';
     createFile();
   }
 function afterFileSetup(){
@@ -71,7 +65,7 @@ function afterFileSetup(){
     else {
       startPage.clear();
       //setTimeout(function(){trial=new Trial(0);},10)
-      setTimeout(function(){practiceTrial=new PracticeTrial();},10)
+      setTimeout(function(){page=new Page();},10)
       return;
     }
   }
@@ -79,8 +73,136 @@ function afterFileSetup(){
 
   startPage.clear();
   saveSubjInfo();
-  setTimeout(function(){practiceTrial=new PracticeTrial(0);},10)
+  setTimeout(function(){page=new Page();},10)
 }
+
+class Page{
+  constructor(){
+    createjs.Ticker.addEventListener("tick", handleTick);
+
+//top button
+
+//    this.but1=new createjs.Shape();
+//    this.text1=new createjs.Text("", "30px "+BUTTON_FONT, "#002b2b");
+//    this.but1=createButton(this.but1,250,80)
+//
+//    this.topButX=mainCV.width/2-150/2;
+//    this.toptButY=mainCV.height/3;
+//   this.topTextX=mainCV.width/3//-this.but1.getBounds().width/2;
+    this.topTextY=50;
+  //low button
+
+//      this.but2=new createjs.Shape();
+//  this.text2=new createjs.Text("", "30px "+BUTTON_FONT, "#002b2b");
+//  this.but2=createButton(this.but2,250,80)
+//  this.lowButX=mainCV.width/2-150/2;
+//  this.lowButY=mainCV.height/3+200;
+//  this.lowTextX=mainCV.width/2-this.text2.getBounds().width/2;
+//  this.lowTextY=this.lowButY+60/4.5;
+
+  //center text
+  this.centerText=new createjs.Text("Finished", "30px "+BUTTON_FONT, "black");
+  this.centerTextY=mainCV.height/3-this.centerText.getBounds().height/2;
+  this.centerText.x=mainCV.width/2-this.centerText.getBounds().width/2;
+  this.centerText.y=this.centerTextY;
+  //circle!
+    timerRect=new createjs.Shape();
+      this.cirR1=100;
+      this.cirR2=150;
+      timerRect.r=this.cirR1;
+    //  timerRectCmd= timerRect.graphics.beginFill('lightblue').drawCircle(mainCV.width/2,mainCV.height/2,timerRect.r).command;
+     timerRectCmd= timerRect.graphics.beginRadialGradientFill(['lightblue', 'blue'],[0,1],mainCV.width/2,mainCV.height/2,0,mainCV.width/2,mainCV.height/2,this.cirR2*2).drawCircle(mainCV.width/2,mainCV.height/2,timerRect.r).command;
+      timerRectCmd.radius=timerRect.r;
+    //color filter
+    //filter = new createjs.ColorFilter(1,0,0,1); //green&blue = 0, only red and alpha stay
+  //  timerRect.filters = [filter];
+
+this.round=0;
+this.passedBreath=0;
+      this.play();
+  }
+  play(){
+    this.centerText.text='Tap to start';
+      this.centerText.x=Page.textCenterX(this.centerText);
+    stage.addChild(this.centerText);
+      mainCV.addEventListener('click',RelaxPhase, false);
+    stage.update();
+
+  }
+
+  static textCenterX(txtShape){
+      return mainCV.width/2-txtShape.getBounds().width/2;
+  }
+
+}
+function handleTick(event) {
+  stage.update();
+    // Actions carried out each tick (aka frame)
+    if (!event.paused) {
+        // Actions carried out when the Ticker is not paused.
+    }
+}
+
+function RelaxPhase(){
+  mainCV.removeEventListener('click',RelaxPhase, false);
+    if(page.round==ROUND_NUM){
+      stage.removeAllChildren();
+      page.centerText.y=page.cen
+        finishGame();
+        return;
+    }
+    var str='';
+    str=str+'Round: '+ page.round+'\n';
+    str=str+'Relax: '+Date.now()+'\n';
+    appendToFile(new Blob([str],{ type: 'text/plain' }))
+    stage.addChild(page.centerText);
+    page.round=page.round+1;
+      page.centerText.text='Relax';
+      page.centerText.x=Page.textCenterX(page.centerText);
+     stage.update();
+    setTimeout(guidedPhase, relaxTime);
+  }
+
+function guidedPhase(){
+   var str='';
+   str=str+'Guided: '+ Date.now()+'\n';
+   appendToFile(new Blob([str],{ type: 'text/plain' }))
+    page.passedBreath=0;
+    stage.removeAllChildren();
+    stage.addChild(timerRect);
+    stage.addChild(page.centerText)
+
+    inhale();
+          //.addEventListener("change", drawTimer)
+}
+function inhale(){
+
+  if(page.passedBreath>=breathNum){
+    stage.removeAllChildren();
+    page.centerText.y=page.centerTextY;
+    RelaxPhase();
+    return;
+  }
+  page.passedBreath++;
+    page.centerText.text='Breath in'
+    page.centerText.x=Page.textCenterX(page.centerText);
+    page.centerText.y=page.topTextY
+
+    createjs.Tween.get(timerRectCmd,{ useTicks:false})
+    .to({radius: page.cirR2},5000,createjs.Ease.quadInOut ).call(exhale)
+}
+function exhale(){
+  page.centerText.text='Breath out'
+  page.centerText.x=Page.textCenterX(page.centerText);
+  page.centerText.y=page.topTextY
+
+  createjs.Tween.get(timerRectCmd,{ useTicks:false})
+  .to({radius: page.cirR1},5000, createjs.Ease.quadInOut ).call(inhale);
+
+  //createjs.Tween.get(filter)
+  //  .to({redMultiplier:0, greenMultiplier:1 }, 5000);
+}
+
 class StartPage{
   constructor(){
     this.startBut=new createjs.Shape();
@@ -126,278 +248,50 @@ class EndPage{
       this.againRect.x=mainCV.width/2-150/2;
       this.againRect.y=this.againText.y-60/4.5;
 
+      this.shareText=new createjs.Text("Share Results", "20px "+BUTTON_FONT, "#002b2b");
+      this.shareText.x=mainCV.width/2-this.shareText.getBounds().width/2;
+      this.shareText.y=this.againText.y+120;
+      this.shareRect=new createjs.Shape();
+      this.shareRect=createButton(this.shareRect,150,60)
+      this.shareRect.x=mainCV.width/2-150/2;
+      this.shareRect.y=this.shareText.y-60/4.5;
+
   }
  addToStage(){
     stage.addChild(this.gameOverText);
-    stage.addChild(this.againRect);
-    stage.addChild(this.againText)
-    this.againRect.addEventListener("click",playAgain);
+    //stage.addChild(this.againRect);
+    //stage.addChild(this.againText)
+
+    stage.addChild(this.shareRect);
+    stage.addChild(this.shareText)
+    //this.againRect.addEventListener("click",playAgain);
+    this.shareRect.addEventListener("click",fileShare);
     stage.update();
   }
 }
 
-class instructionPage{
-  constructor(){
-    this.text='You will see a page containing a number of  \'d and \'p letters.'+
-    'Each letter can have one or two dashes above and/or below it.'+
-    ' Your task is to touch letters \'d\' when it has a total of two dashes above or below it.'+
-    '\n\nThese are the letters you have to touch\n'+
-    'd'+topQuotes[1]+'  '+'d'+downQuotes[1]+'  '+
-    'd'+topQuotes[0]+downQuotes[0]+
-    '\n\nAnd these are all other letters you have to ignore:\n'+
-    'd'+topQuotes[1]+dwonQuotes[1]+ '  '+
-    'd'+topQuotes[0]+'  '+
-    'd'+            downQuotes[0]+'  '+
-    'd'+topQuotes[0]+downQuotes[1]+ '  '+
-    'd'+topQuotes[1]+downQuotes[0]+ '  '+
-
-    'p'+topQuotes[1]+'  '+'p'+downQuotes[1]+'  '+
-    'p'+topQuotes[0]+downQuotes[0]+
-    'p'+topQuotes[1]+dwonQuotes[1]+ '  '+
-    'p'+topQuotes[0]+'  '+
-    'p'+            downQuotes[0]+'  '+
-    'p'+topQuotes[0]+downQuotes[1]+ '  '+
-    'p'+topQuotes[1]+downQuotes[0]+ '  ';
-   this.txtShape=new createjs.Text(this.text,fontStr,'black');
-   this.txtShape.x=10;this.txtShape.y=10;
-   this.nextBut=new createjs.Shape();
-   this.startBut=createButton(this.startBut,250,60)
-   this.startBut.x=mainCV.width/2-150/2;
-   this.startBut.y=mainCV.height*2/3;
-   this.nextText=new createjs.Text("Practice", "20px "+BUTTON_FONT, "#002b2b");
-
-  }
-  addToStage(){
-    stage.addChild(this.txtShape);
-    stage.update();
-
-  }
-}
-class Trial{
-  constructor(trialN){
-    this.trialN=trialN;
-    this.textShapes=[];
-    this.correctAnswered=false;
-    this.correctAr=[];
-    var str = new Date().toJSON()+', '
-    str=str+Date.now()+'\n'
-    this.correctAr=Trial.randBool(this.correctAr,nRow*nCol,numTarget)
-    for(var i=0;i<nRow;i++){
-      for(var j=0; j<nCol;j++){
-          var ind=Trial.ij2ind(i,j);
-          if(j==0){
-              str=str+this.correctAr[ind];
-            }
-          else {
-            str=str+', ' +this.correctAr[ind];
-          }
-          if(this.correctAr[ind])
-              this.textShapes[ind] = new createjs.Text(Trial.getRandomTargetStr(), fontStr, 'black')
-          else
-              this.textShapes[ind] = new createjs.Text(Trial.getRandomStr(), fontStr, 'black')
-          this.textShapes[ind].ind=ind;
-          var xy=Trial.ij2xy(i,j);
-          this.textShapes[ind].x=xy.x-fontSize/3;
-          this.textShapes[ind].y=xy.y-fontSize/1.2;
-          stage.addChild(this.textShapes[ind]);
-      }
-      str=str+'\n'
-    }
-    str=str+'\n'
-    var trialInfo=new Blob([str],{ type: 'text/plain' })
-    appendToFile(trialInfo)
-    this.onsetTime=Date.now();
-    this.respTime=null;
-    stage.update();
-    mainCV.addEventListener("click", onClick,false);
-    respTimeout= setTimeout(onNoResponse,timeLimit);
-  }
-  static  shuffle(array) {
-  var currentIndex = array.length, temporaryValue, randomIndex;
-
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
-
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
-  }
-
-  return array;
-}
-static randBool(ar,n,m){
-  for(var i=0;i<n;i++){
-    ar[i]=false;
-    if(i < m){
-      ar[i]=true;
-    }
-  }
-  ar=Trial.shuffle(ar);
-  return ar;
-}
-  static getRandomStr(){
-    var ind1=Trial.getRandomInt(3);
-    var ind2=Trial.getRandomInt(3);
-    var letter=letters[Trial.getRandomInt(letters.length)]
-    if ((ind1==0 && ind2==0)||(ind1+ind2==2 && letter=='d'))
-        return Trial.getRandomStr();
-    else{
-        return letter+topQuotes[ind1]+downQuotes[ind2];
-    }
-  }
-  static getRandomTargetStr(){
-    var ind1=Trial.getRandomInt(3);
-    var ind2=2-ind1;
-    return 'd'+topQuotes[ind1]+downQuotes[ind2];
-  }
-  static ij2ind(i,j){
-    if(i<0 ||j<0)
-      return -1;
-    return i*nCol+j;
-  }
-  static ind2ij(ind){
-    var ij=new Object();
-    ij.i = Math.floor(ind/nCol);
-    ij.j = ind - ij.i * nCol
-    return ij;
-  }
-  static ij2xy(i,j){
-    var xy=new Object();
-    var xLeft=j*cellWidth+Wmargin+cellWidth/2;
-    var yTop=i*cellHeight+Hmargin+cellHeight/2;
-    xy.x=xLeft//+cellWidth/2;
-    xy.y=yTop//+cellHeight/2;
-    return xy;
-  }
-  static xy2ij(x,y){//for event listener
-      var ij=new Object();
-      if(x<Wmargin|| x>nCol*cellWidth+Wmargin || y<Hmargin||y>nRow*cellHeight+Hmargin){
-        ij.i=-1;
-        ij.j=-1;
-        return ij;
-      }
-      ij.j=Math.floor((x-Wmargin)/cellWidth)
-      ij.i=Math.floor((y-Hmargin)/cellHeight)
-      return ij;
-  }
-  static getRandomInt(max) {
-    //0<=result<=max
-  return Math.floor(Math.random() * Math.floor(max));
-}
-}
-function startNextTrial(){
-  stage.removeAllChildren();
-  stage.update();
-  if(trial.trialN==TRIAL_NUM-1){
-    finishGame();
-  }
-  else{
-    setTimeout(function(){
-      trial=new Trial(trial.trialN+1);
-    },ITI)
-  }
-}
-function onNoResponse(){
-  createjs.Sound.play("timeout");
-  mainCV.removeEventListener("click", onClick,false);
-  appendToFile(new Blob(['-1\n'], {type:'text/plain'}));
-  startNextTrial();
-}
-
-function correctClicked(){
-  clearTimeout(respTimeout);
-//  createjs.Sound.play("right");
-  trial.correctAnswered=true;
-  mainCV.removeEventListener("click", onClick,false);
-  setTimeout(startNextTrial,800);
-}
-function wrongClicked(){
-  //createjs.Sound.play("wrong");
-}
-function onClick(e){
-  //alert('in onClick')
-   trial.respTime=Date.now();
-  // alert('timeStamp: '+trial.respTime);
-    var x=e.layerX;
-    var y=e.layerY;
-    var ij=Trial.xy2ij(x,y);
-    var xy=Trial.ij2xy(ij.i,ij.j);
-    var ind=Trial.ij2ind(ij.i,ij.j);
-    var rightResp=trial.correctAr[ind];
-    //alert('right? '+rightResp)
-
-    var clickData= new Blob([trial.trialN+ ', '+ij.i+', '+ij.j +', '+ x+ ', '+ y+ ', '+rightResp+ ', '+trial.onsetTime+', '+trial.respTime+'\n'], { type: 'text/plain' })
-    //alert('saving ')
-    appendToFile(clickData);
-    //alert('saved')
-    drawLine(xy.x,xy.y);
-    //drawClickCircle(xy.x,xy.y,'red');
-    // if(rightResp){
-    //   //alert('right')
-    //   drawClickCircle(xy.x,xy.y,'green')
-    //     correctClicked();
-    // }
-    // else {
-    //   //alert('wrong');
-    //     drawClickCircle(xy.x,xy.y,'red')
-    //   wrongClicked();
-    // }
-}
-function drawLine(x,y){
-  var r=Math.min(cellWidth/4,cellHeight/4)
-  var line1 = new createjs.Shape();
-  line1.graphics.setStrokeStyle(2);
-  line1.graphics.beginStroke('black');
-  line1.graphics.moveTo(x-r, y-r)
-  line1.graphics.lineTo(x+r,y+r);
-
-  var line2 = new createjs.Shape();
-  line2.graphics.setStrokeStyle(2);
-  line2.graphics.beginStroke('black');
-  line2.graphics.moveTo(x-r, y+r)
-  line2.graphics.lineTo(x+r,y-r);
-  stage.addChild(line1);
-  stage.addChild(line2);
-  stage.update();
-}
-function drawClickCircle(x,y,color,disappear,alpha){
-  var cir=new createjs.Shape();
-  cir.graphics.beginFill(color).drawCircle(x,y,Math.min(cellWidth/3,cellHeight/3));
-  cir.alpha=alpha;
-  stage.addChild(cir);
-  //createjs.Tween.get(cir).to({alpha:0},1000).call(test);
-  stage.update();
-  if(disappear){
-    setTimeout(function(){
-      cir.alpha=0;
-      stage.update();
-    },1000);
-  }
-}
 function startGame(){
 
-  //screen.orientation.lock("portrait");
+  screen.orientation.lock("portrait");
   loadSounds();
   mainCV =document.getElementById('mainCV')
   stage = new createjs.Stage(mainCV);
   stage.canvas.height =window.innerHeight;
   stage.canvas.width=window.innerWidth;
-  cellWidth=(mainCV.width- Wmargin*2)/nCol;
-  cellHeight=(mainCV.height- Hmargin*2)/nRow;
   startPage=new StartPage();
   startPage.addToStage();
 }
 
 function finishGame(){
+  var str='';
+  str=str+'Finished: '+Date.now()+'\n';
+  appendToFile(new Blob([str],{ type: 'text/plain' }))
   stage.removeAllChildren();
   stage.update();
 endPage= new EndPage()
 endPage.addToStage();
+fileShare();
+//emailRes();
 }
 function playAgain(e){
   createjs.Sound.play("hit");
@@ -413,132 +307,8 @@ function onRestart(){
 }
 
 
-
-//practice trials
-
-class PracticeTrial{
-  constructor(){
-    this.textShapes=[];
-    this.correctAnswered=false;
-    this.correctAr=[];
-    this.numRow=5;
-    this.numCol=nCol;
-    for(var i=0;i<this.numRow;i++){
-      for(var j=0; j<this.numCol;j++){
-          var ind=Trial.ij2ind(i,j);
-          if(Math.random()<p_target){
-            this.correctAr[ind]=true;
-          }
-          else {
-            this.correctAr[ind]=false;
-          }
-          if(this.correctAr[ind])
-              this.textShapes[ind] = new createjs.Text(Trial.getRandomTargetStr(), fontStr, 'black')
-          else
-              this.textShapes[ind] = new createjs.Text(Trial.getRandomStr(), fontStr, 'black')
-          this.textShapes[ind].ind=ind;
-          var xy=Trial.ij2xy(i,j);
-          this.textShapes[ind].x=xy.x-fontSize/3;
-          this.textShapes[ind].y=xy.y-fontSize/1.2;
-          stage.addChild(this.textShapes[ind]);
-      }
-    }
-    //add buttons
-
-    this.ansBut=new createjs.Shape();
-    this.ansText=new createjs.Text("Solution", "20px "+BUTTON_FONT, "#002b2b");
-    this.ansBut=createButton(this.ansBut,150,60)
-    this.ansBut.x=mainCV.width/2-150/2;
-    this.ansBut.y=mainCV.height*2/3;
-    this.ansText.x=mainCV.width/2-this.ansText.getBounds().width/2;
-    this.ansText.y=this.ansBut.y+60/4.5;
-
-    stage.addChild(this.ansBut);
-    stage.addChild(this.ansText);
-    stage.update();
-    mainCV.addEventListener("click", onPracticeClick,false);
-    this.ansBut.addEventListener("click",OnSeeAnswers,true);
-
-    //make finish and practice more buttons
-    this.pmBut=new createjs.Shape();
-    this.pmText=new createjs.Text("Practice more", "20px "+BUTTON_FONT, "#002b2b");
-    this.pmBut=createButton(this.pmBut,150,60)
-    this.pmBut.x=mainCV.width/2-150/2-200;
-    this.pmBut.y=mainCV.height*2/3;
-    this.pmText.x=mainCV.width/2-this.pmText.getBounds().width/2-200;
-    this.pmText.y=this.pmBut.y+60/4.5;
-
-    this.fpBut=new createjs.Shape();
-    this.fpText=new createjs.Text("Finish practice", "20px "+BUTTON_FONT, "#002b2b");
-    this.fpBut=createButton(this.fpBut,150,60)
-    this.fpBut.x=mainCV.width/2-150/2+200;
-    this.fpBut.y=mainCV.height*2/3;
-    this.fpText.x=mainCV.width/2-this.fpText.getBounds().width/2+200;
-    this.fpText.y=this.fpBut.y+60/4.5;
-    stage.update()
-  }
-}
-function onPracticeClick(e){
-  var x=e.layerX;
-  var y=e.layerY;
-  var ij=Trial.xy2ij(x,y);
-  var xy=Trial.ij2xy(ij.i,ij.j);
-  var ind=Trial.ij2ind(ij.i,ij.j);
-  var rightResp=practiceTrial.correctAr[ind];
-  if(rightResp){
-      //drawClickCircle(xy.x,xy.y,'green',false,0.1)
-      drawLine(xy.x,xy.y)
-  }
-  else if(ij.i>=0 && ij.j>=0 && ij.i<practiceTrial.numRow){
-    drawClickCircle(xy.x,xy.y,'red',true,0.1)
-  }
-}
-function OnSeeAnswers(){
-  mainCV.removeEventListener("click", onPracticeClick,false);
-  practiceTrial.ansBut.removeEventListener("click",OnSeeAnswers,true);
-  for(var i=0;i<practiceTrial.numRow;i++){
-    for(var j=0; j<practiceTrial.numCol;j++){
-        var ind=Trial.ij2ind(i,j);
-        if(practiceTrial.correctAr[ind]){
-          xy=Trial.ij2xy(i,j);
-          drawClickCircle(xy.x,xy.y,'green',false,0.4)
-        }
-      }
-    }
-    stage.removeChild(practiceTrial.ansBut);
-    stage.removeChild(practiceTrial.ansText);
-
-    practiceTrial.pmBut.addEventListener("click",function(){
-      stage.clear();
-      stage.removeAllChildren();
-      stage.update();
-      setTimeout(function(){practiceTrial=new PracticeTrial();},10)
-    },true);
-
-
-    practiceTrial.fpBut.addEventListener("click",function(){
-      stage.clear();
-      stage.removeAllChildren();
-      stage.addChild(startPage.startBut);
-      stage.addChild(startPage.startText);
-      stage.update();
-      startPage.startBut.addEventListener('click',function(){
-        stage.removeAllChildren();
-        stage.update();
-        setTimeout(function(){trial=new Trial(0);},10)
-      },true)
-      stage.update();
-    },true);
-
-
-    stage.addChild(practiceTrial.fpBut);
-    stage.addChild(practiceTrial.fpText);
-    stage.addChild(practiceTrial.pmBut);
-    stage.addChild(practiceTrial.pmText);
-    stage.update();
-}
 ////////////////////////////////////////////////
-
+//
 document.addEventListener("deviceready", onDeviceReady, false);
     // device APIs are available
     //
@@ -550,9 +320,8 @@ document.addEventListener("deviceready", onDeviceReady, false);
 ////////////////FILE new
 
 function createFile(){
-  fileSetupDone=true;
-  afterFileSetup();
-  //window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, gotFS, fail);
+ // window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, gotFS, fail);
+    afterFileSetup();
 }
 function gotFS(fileSystem) {
   //  alert(" got file system! root is "+fileSystem.root)
@@ -585,29 +354,51 @@ function fileExists(){
 }
 function appendToFile(dataObj){
     //alert('starting to write..')
-    var reader = new FileReader();
-    reader.onload = function() {
-    console.log(reader.result);
-}
-reader.readAsText(dataObj);
+
 }
 
 
 function saveSubjInfo(){
-  str='';
+  var str='';
   str=str+'Subj_id: '+ SUBJ_ID+'\n';
-  var age=document.getElementById('age').value;
-  str=str+'Age: '+age+'\n';
-  var gender='U';
-  if(document.getElementById('gender-male').checked){
-    gender='M';
-  }
-  else if(document.getElementById('gender-female').checked){
-    gender='F';
-  }
-  str= str + 'Gender: '+gender+'\n';
-  var comment=document.getElementById("comment").value;
-  str=str + 'Comment: ' + comment+'\n';
+  str= str+new Date().toJSON()+'\n';
   var personalData= new Blob([str], { type: 'text/plain' });
   appendToFile(personalData);
+}
+
+//file sharing
+// this is the complete list of currently supported params you can pass to the plugin (all optional)
+function emailRes(){
+  window.plugin.email.isServiceAvailable(
+    function (isAvailable) {
+        alert('is available')
+    }
+);
+    cordova.plugins.email.open({
+      to:          'ss3767@cornell.edu', // email addresses for TO field
+    //  cc:          Array, // email addresses for CC field
+    //  bcc:         Array, // email addresses for BCC field
+      attachments: 'app://Documents/'+subjFileName, // file paths or base64 data streams
+      subject:    'd2 test data file (SUBJECT: '+SUBJ_ID+')', // subject of the email
+      body:       ' ', // email body (for HTML, set isHtml to true)
+  }, callback, scope);
+
+}
+function fileShare(){
+  var options = {
+  message: 'share data', // not supported on some apps (Facebook, Instagram)
+  subject: 'd2 Test iPad data', // fi. for email
+  files: [cordova.file.documentsDirectory+subjFileName], // an array of filenames either locally or remotely
+  };
+
+  var onSuccess = function(result) {
+  //  alert("Share completed? " + result.completed); // On Android apps mostly return false even while it's true
+    //alert("Shared to app: " + result.app); // On Android result.app since plugin version 5.4.0 this is no longer empty. On iOS it's empty when sharing is cancelled (result.completed=false)
+  };
+
+  var onError = function(msg) {
+    alert("Sharing failed with message: " + msg);
+  };
+
+  window.plugins.socialsharing.shareWithOptions(options, onSuccess, onError);
 }
