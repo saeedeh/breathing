@@ -1,7 +1,7 @@
 //inilize variables
 const ROUND_NUM=2
-const relaxTime=1000;
-const breathNum=5;
+const relaxTime=60000;
+const breathNum=6;
 const fontSize=35;
 const fontStr=fontSize+'px Calibri';
 const Wmargin=50;//5px margin
@@ -107,11 +107,11 @@ class Page{
   this.centerText.y=this.centerTextY;
   //circle!
     timerRect=new createjs.Shape();
-      this.cirR1=100;
-      this.cirR2=150;
+      this.cirR1=50;
+      this.cirR2=250;
       timerRect.r=this.cirR1;
     //  timerRectCmd= timerRect.graphics.beginFill('lightblue').drawCircle(mainCV.width/2,mainCV.height/2,timerRect.r).command;
-     timerRectCmd= timerRect.graphics.beginRadialGradientFill(['lightblue', 'blue'],[0,1],mainCV.width/2,mainCV.height/2,0,mainCV.width/2,mainCV.height/2,this.cirR2*2).drawCircle(mainCV.width/2,mainCV.height/2,timerRect.r).command;
+     timerRectCmd= timerRect.graphics.beginRadialGradientFill(['lightblue', 'blue'],[0,1],mainCV.width/2,mainCV.height/2,0,mainCV.width/2,mainCV.height/2,this.cirR2).drawCircle(mainCV.width/2,mainCV.height/2,timerRect.r).command;
       timerRectCmd.radius=timerRect.r;
     //color filter
     //filter = new createjs.ColorFilter(1,0,0,1); //green&blue = 0, only red and alpha stay
@@ -147,7 +147,7 @@ function RelaxPhase(){
   mainCV.removeEventListener('click',RelaxPhase, false);
     if(page.round==ROUND_NUM){
       stage.removeAllChildren();
-      page.centerText.y=page.cen
+      page.centerText.y=page.centerTextY
         finishGame();
         return;
     }
@@ -164,6 +164,7 @@ function RelaxPhase(){
   }
 
 function guidedPhase(){
+  createjs.Sound.play("timeout");
    var str='';
    str=str+'Guided: '+ Date.now()+'\n';
    appendToFile(new Blob([str],{ type: 'text/plain' }))
@@ -171,7 +172,6 @@ function guidedPhase(){
     stage.removeAllChildren();
     stage.addChild(timerRect);
     stage.addChild(page.centerText)
-
     inhale();
           //.addEventListener("change", drawTimer)
 }
@@ -189,7 +189,7 @@ function inhale(){
     page.centerText.y=page.topTextY
 
     createjs.Tween.get(timerRectCmd,{ useTicks:false})
-    .to({radius: page.cirR2},5000,createjs.Ease.quadInOut ).call(exhale)
+    .to({radius: page.cirR2},6000,createjs.Ease.quadInOut ).call(exhale)
 }
 function exhale(){
   page.centerText.text='Breath out'
@@ -197,7 +197,7 @@ function exhale(){
   page.centerText.y=page.topTextY
 
   createjs.Tween.get(timerRectCmd,{ useTicks:false})
-  .to({radius: page.cirR1},5000, createjs.Ease.quadInOut ).call(inhale);
+  .to({radius: page.cirR1},4000, createjs.Ease.quadInOut ).call(inhale);
 
   //createjs.Tween.get(filter)
   //  .to({redMultiplier:0, greenMultiplier:1 }, 5000);
@@ -305,8 +305,6 @@ function onRestart(){
   startPage=new StartPage();
     startPage.addToStage();
 }
-
-
 ////////////////////////////////////////////////
 //
 document.addEventListener("deviceready", onDeviceReady, false);
