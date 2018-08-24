@@ -189,7 +189,7 @@ function inhale(){
     page.centerText.y=page.topTextY
 
     createjs.Tween.get(timerRectCmd,{ useTicks:false})
-    .to({radius: page.cirR2},6000,createjs.Ease.quadInOut ).call(exhale)
+    .to({radius: page.cirR2},4000,createjs.Ease.quadInOut ).call(exhale)
 }
 function exhale(){
   page.centerText.text='Breath out'
@@ -197,7 +197,7 @@ function exhale(){
   page.centerText.y=page.topTextY
 
   createjs.Tween.get(timerRectCmd,{ useTicks:false})
-  .to({radius: page.cirR1},4000, createjs.Ease.quadInOut ).call(inhale);
+  .to({radius: page.cirR1},6000, createjs.Ease.quadInOut ).call(inhale);
 
   //createjs.Tween.get(filter)
   //  .to({redMultiplier:0, greenMultiplier:1 }, 5000);
